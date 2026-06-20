@@ -63,7 +63,7 @@
                 <button id="prev_week" type="button" class="week_nav_btn" aria-label="Previous week">
                     ←
                 </button>
-                <span id="week_label" class="week_label">Week —</span>
+                <span id="week_label" class="week_label">Week <input id="week_input" type="number" class="week_input_inline" placeholder="—" min="1" step="1"></span>
                 <button id="next_week" type="button" class="week_nav_btn" aria-label="Next week">
                     →
                 </button>
@@ -81,6 +81,7 @@
                 <span id="today_label" class="today_label">Today</span>
             </div>
 
+            <section id="today_schedule_card" class="today_schedule_card" aria-label="Today's schedule"></section>
             <div id="timetable_grid" class="timetable_grid" aria-label="Weekly timetable"></div>
             <div id="timetable_mobile" class="timetable_mobile" aria-label="Weekly timetable by day"></div>
         </div>

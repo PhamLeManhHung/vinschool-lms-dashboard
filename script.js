@@ -6,6 +6,7 @@ const hubTitle = document.getElementById("hub_title");
 const prevWeekBtn = document.getElementById("prev_week");
 const nextWeekBtn = document.getElementById("next_week");
 const weekLabel = document.getElementById("week_label");
+const weekInput = document.getElementById("week_input");
 const viewTabs = document.querySelectorAll(".view_tab");
 const workView = document.getElementById("work_view");
 const timetableView = document.getElementById("timetable_view");
@@ -29,9 +30,9 @@ const SUBJECT_LABELS = {
   TECH: "Tech",
   GEO: "Geography",
   HIS: "History",
-  CIVIC: "CLISE",
+  CIVIC: "Life Skills",
   GCED: "GCED",
-  CLISE: "Life Skills",
+  CLISE: "CLISE",
   NV: "Literature",
   LOCE: "Local Ed",
   CAREER: "Career",
@@ -285,10 +286,11 @@ function renderCoursePills() {
 function updateWeekNav() {
   const weekIndex = availableWeeks.indexOf(currentWeek);
 
-  weekLabel.textContent = currentWeek ? `Week ${currentWeek}` : "Week —";
+  weekInput.value = currentWeek || "";
   prevWeekBtn.disabled = weekIndex <= 0;
   nextWeekBtn.disabled = weekIndex < 0 || weekIndex >= availableWeeks.length - 1;
 }
+
 
 function weekApiPath(courseId, week) {
   const suffix = unfinishedOnly.checked ? "/unfinished" : "";
@@ -418,7 +420,7 @@ function createSlotContent(period, entry) {
   meta.className = "slot_meta";
   meta.textContent = metaParts.length > 0
     ? metaParts.join(" · ")
-    : `${period.start}-${period.end}`;
+    : "";
 
   fragment.append(subject, meta);
   return fragment;
@@ -446,24 +448,44 @@ function renderTimetableGrid() {
   }
 
   for (const period of TIMETABLE_PERIODS) {
+    if (period.type === "break") {
+      const breakCell = document.createElement("div");
+      breakCell.className = "slot_cell slot_cell_break slot_cell_break_full";
+      if (todayKey) {
+        breakCell.classList.add("slot_cell_today");
+      }
+      const breakSubject = document.createElement("p");
+      breakSubject.className = "slot_subject";
+      breakSubject.textContent = period.label;
+      const breakMeta = document.createElement("p");
+      breakMeta.className = "slot_meta";
+      breakMeta.textContent = `${period.start}-\n${period.end}`;
+      breakCell.append(breakSubject, breakMeta);
+      cells.push(breakCell);
+      continue;
+    }
+
     const timeCell = document.createElement("div");
     timeCell.className = "time_cell";
-    timeCell.textContent = `${period.label}\n${period.start}-${period.end}`;
+    timeCell.textContent = `${period.label}\n${period.start}-\n${period.end}`;
     cells.push(timeCell);
 
-    for (const day of TIMETABLE_DAYS) {
+    for (let i = 0; i < TIMETABLE_DAYS.length; i++) {
+      const day = TIMETABLE_DAYS[i];
       const entry = timetableEntryFor(day.key, period.key);
       const slot = document.createElement("div");
       slot.className = "slot_cell";
 
-      if (period.type === "break") {
-        slot.classList.add("slot_cell_break");
-      } else if (!entry) {
+      if (!entry) {
         slot.classList.add("slot_cell_free");
       }
 
       if (day.key === todayKey) {
         slot.classList.add("slot_cell_today");
+      }
+
+      if (i === TIMETABLE_DAYS.length - 1) {
+        slot.classList.add("last_col");
       }
 
       slot.append(createSlotContent(period, entry));
@@ -511,7 +533,7 @@ function renderTimetableMobile() {
 
       const time = document.createElement("div");
       time.className = "mobile_time";
-      time.textContent = `${period.label}\n${period.start}-${period.end}`;
+      time.textContent = `${period.label}\n${period.start}-\n${period.end}`;
 
       const content = document.createElement("div");
       content.append(createSlotContent(period, entry));
@@ -526,11 +548,82 @@ function renderTimetableMobile() {
   timetableMobile.replaceChildren(...daySections);
 }
 
+function renderTodaySchedule() {
+  const todayKey = todayDayKey();
+  const card = document.getElementById("today_schedule_card");
+  card.replaceChildren();
+
+  if (!todayKey) {
+    const empty = document.createElement("p");
+    empty.className = "today_schedule_empty";
+    empty.textContent = "No classes today — enjoy the weekend!";
+    card.appendChild(empty);
+    return;
+  }
+
+  const heading = document.createElement("h3");
+  heading.className = "today_schedule_heading";
+  const today = TIMETABLE_DAYS.find((day) => day.key === todayKey);
+  heading.textContent = `Today · ${today.label}`;
+  card.appendChild(heading);
+
+  const list = document.createElement("div");
+  list.className = "today_schedule_list";
+
+  const todayEntries = (TIMETABLE[todayKey] || [])
+    .map((entry) => {
+      const period = TIMETABLE_PERIODS.find((p) => p.key === entry.period);
+      return period ? { ...entry, period } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.period.start.localeCompare(b.period.start));
+
+  if (todayEntries.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "today_schedule_empty";
+    empty.textContent = "No classes scheduled for today.";
+    list.appendChild(empty);
+  } else {
+    for (const entry of todayEntries) {
+      const item = document.createElement("div");
+      item.className = "today_schedule_item";
+
+      const timeBadge = document.createElement("span");
+      timeBadge.className = "today_schedule_time";
+      timeBadge.textContent = `${entry.period.start}-\n${entry.period.end}`;
+
+      const info = document.createElement("div");
+      info.className = "today_schedule_info";
+
+      const subject = document.createElement("p");
+      subject.className = "today_schedule_subject";
+      subject.textContent = entry.subject;
+
+      const metaParts = [];
+      if (entry.room) metaParts.push(entry.room);
+      if (entry.teacher) metaParts.push(entry.teacher);
+
+      const meta = document.createElement("p");
+      meta.className = "today_schedule_meta";
+      meta.textContent = metaParts.length > 0 ? metaParts.join(" · ") : "";
+
+      info.append(subject, meta);
+      item.append(timeBadge, info);
+      list.appendChild(item);
+    }
+  }
+
+  card.appendChild(list);
+}
+
+
+
 function renderTimetable() {
   const todayKey = todayDayKey();
   const today = TIMETABLE_DAYS.find((day) => day.key === todayKey);
   todayLabel.textContent = today ? `Today: ${today.label}` : "Weekend";
 
+  renderTodaySchedule();
   renderTimetableGrid();
   renderTimetableMobile();
 }
@@ -559,6 +652,31 @@ function setView(viewName) {
 
 prevWeekBtn.addEventListener("click", () => changeWeek(-1));
 nextWeekBtn.addEventListener("click", () => changeWeek(1));
+
+weekInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const value = Number(weekInput.value);
+    if (!Number.isFinite(value) || value < 1) {
+      updateWeekNav();
+      return;
+    }
+
+    const weekIndex = availableWeeks.indexOf(value);
+    if (weekIndex < 0) {
+      updateWeekNav();
+      return;
+    }
+
+    currentWeek = value;
+    localStorage.setItem("selectedWeek", String(currentWeek));
+    loadItems();
+  }
+});
+
+weekInput.addEventListener("blur", () => {
+  updateWeekNav();
+});
 unfinishedOnly.addEventListener("change", loadItems);
 searchInput.addEventListener("input", renderItems);
 document.querySelector(".icon").addEventListener("click", () => searchInput.focus());
