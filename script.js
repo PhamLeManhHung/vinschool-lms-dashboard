@@ -5,7 +5,6 @@ const unfinishedOnly = document.getElementById("unfinished_only");
 const hubTitle = document.getElementById("hub_title");
 const prevWeekBtn = document.getElementById("prev_week");
 const nextWeekBtn = document.getElementById("next_week");
-const weekLabel = document.getElementById("week_label");
 const weekInput = document.getElementById("week_input");
 const viewTabs = document.querySelectorAll(".view_tab");
 const themeToggle = document.getElementById("theme_toggle");
