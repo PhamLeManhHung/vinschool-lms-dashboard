@@ -102,6 +102,34 @@ body.light {
 body {
     background: var(--bg-body);
     color: var(--text-primary);
+    position: relative;
+}
+
+.language_selector {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    padding: 8px 12px;
+    border: 1px solid var(--border-input);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    min-width: 100px;
+}
+
+.language_selector:hover {
+    border-color: var(--border-input-hover);
+    background: var(--bg-pill-hover);
+}
+
+.language_selector:focus {
+    outline: none;
+    border-color: var(--accent);
 }
 
 .card {
@@ -170,24 +198,38 @@ body {
 
 .hub_header {
     display: grid;
-    align-items: start;
-    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    grid-template-columns: auto 1fr auto;
     gap: 12px;
     margin-bottom: 16px;
+    position: relative;
+}
+
+.input-wrapper {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: center;
 }
 
 #hub_title {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     margin: 0;
     font-size: 1.1rem;
-    grid-column: 2;
-    justify-self: center;
     text-align: center;
     line-height: 1.4;
+    white-space: nowrap;
+    margin-top: -8px
 }
 
 .filter_toggle {
     grid-column: 3;
-    justify-self: end;
+    grid-row: 1;
+    justify-self: center;
+    align-self: start;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -195,6 +237,7 @@ body {
     color: var(--text-muted-strong);
     cursor: pointer;
     user-select: none;
+    margin-top: -5px;
 }
 
 .filter_toggle input {
@@ -742,9 +785,18 @@ body.light .theme_icon_moon {
     .hub_header {
         grid-template-columns: 1fr;
         grid-template-areas:
+            "language"
             "title"
             "filter"
             "search";
+    }
+
+    .language_selector {
+        grid-area: language;
+        grid-column: auto;
+        justify-self: start;
+        width: 100%;
+        max-width: 200px;
     }
 
     #hub_title {
@@ -759,7 +811,6 @@ body.light .theme_icon_moon {
         grid-column: auto;
         justify-self: start;
     }
-
 
     .input-wrapper {
         grid-area: search;

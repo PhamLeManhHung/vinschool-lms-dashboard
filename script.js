@@ -12,103 +12,228 @@ const workView = document.getElementById("work_view");
 const timetableView = document.getElementById("timetable_view");
 const timetableGrid = document.getElementById("timetable_grid");
 const timetableMobile = document.getElementById("timetable_mobile");
+const languageSelector = document.getElementById("language_selector");
+const tagline = document.getElementById("tagline");
+const timetableTitle = document.getElementById("timetable_title");
+const timetableNote = document.getElementById("timetable_note");
+
+// Language state management
+let currentLanguage = localStorage.getItem("language") || "en";
+
+function setLanguage(lang) {
+  currentLanguage = lang;
+  localStorage.setItem("language", lang);
+  languageSelector.value = lang;
+  renderAll();
+}
+
+function t(key) {
+  return TRANSLATIONS[currentLanguage]?.[key] ?? key;
+}
+
+function getSubjectLabel(subjectId) {
+  return SUBJECT_LABELS[currentLanguage]?.[subjectId] ?? subjectId;
+}
+
+// Translation dictionaries
+const TRANSLATIONS = {
+  en: {
+    monday: "Monday",
+    tuesday: "Tuesday",
+    wednesday: "Wednesday",
+    thursday: "Thursday",
+    friday: "Friday",
+    today: "Today",
+    free: "Free",
+    done: "Done",
+    unfinished: "Unfinished",
+    loadingCourses: "Loading courses...",
+    loadingItems: "Loading items...",
+    noActiveCourses: "No active courses found.",
+    noItemsWeek: "No items for this week.",
+    noItemsMatch: "No items match your search.",
+    time: "Time",
+    period1: "Period 1",
+    period2: "Period 2",
+    period3: "Period 3",
+    period4: "Period 4",
+    period5: "Period 5",
+    period6: "Period 6",
+    period7: "Period 7",
+    breaktime: "Breaktime",
+    lunchBreak: "Lunch Break",
+    work: "Work",
+    timetable: "Timetable",
+    week: "Week",
+    searchPlaceholder: "Search items",
+    unfinishedLabel: "Unfinished",
+    tagline: "Canvas information hub — browse courses, weeks, and resources.",
+    timetableTitle: "Weekly Timetable",
+    timetableNote: "Manual schedule stored locally in this app.",
+    items: "items",
+    noClassesAdded: "No classes added yet.",
+  },
+  vi: {
+    monday: "Thứ Hai",
+    tuesday: "Thứ Ba",
+    wednesday: "Thứ Tư",
+    thursday: "Thứ Năm",
+    friday: "Thứ Sáu",
+    today: "Hôm Nay",
+    free: "Trống",
+    done: "Hoàn Thành",
+    unfinished: "Chưa Hoàn Thành",
+    loadingCourses: "Đang tải khóa học...",
+    loadingItems: "Đang tải mục...",
+    noActiveCourses: "Không tìm thấy khóa học hoạt động.",
+    noItemsWeek: "Không có mục nào trong tuần này.",
+    noItemsMatch: "Không tìm thấy mục phù hợp.",
+    time: "Thời Gian",
+    period1: "Tiết 1",
+    period2: "Tiết 2",
+    period3: "Tiết 3",
+    period4: "Tiết 4",
+    period5: "Tiết 5",
+    period6: "Tiết 6",
+    period7: "Tiết 7",
+    breaktime: "Giờ ra chơi",
+    lunchBreak: "Nghỉ trưa",
+    work: "Làm Việc",
+    timetable: "Thời Khóa Biểu",
+    week: "Tuần",
+    searchPlaceholder: "Tìm kiếm mục",
+    unfinishedLabel: "Chưa Hoàn Thành",
+    tagline: "Trung tâm thông tin Canvas — duyệt khóa học, tuần và tài nguyên.",
+    timetableTitle: "Thời Khóa Biểu Tuần",
+    timetableNote: "Lịch học được lưu cục bộ trong ứng dụng này.",
+    items: "bài",
+    noClassesAdded: "Chưa có lớp học nào được thêm.",
+  },
+};
+
+// Subject labels with bilingual support
+const SUBJECT_LABELS = {
+  en: {
+    MATHS: "Math",
+    PHY: "Physics",
+    CHEM: "Chemistry",
+    BIO: "Biology",
+    IT: "ICT",
+    TECH: "Tech",
+    GEO: "Geography",
+    HIS: "History",
+    CIVIC: "Civics",
+    GCED: "GCED",
+    CLISE: "CLISE",
+    NV: "Literature",
+    LOCE: "Local Studies",
+    CAREER: "Career",
+    VNS: "VNH",
+    ESL: "ESL",
+    MUS: "Music",
+    PE: "Sports",
+    ART: "Art",
+  },
+  vi: {
+    MATHS: "Toán",
+    PHY: "Vật Lý",
+    CHEM: "Hóa Học",
+    BIO: "Sinh Học",
+    IT: "Tin Học",
+    TECH: "Công Nghệ",
+    GEO: "Địa Lý",
+    HIS: "Lịch Sử",
+    CIVIC: "GDCD",
+    GCED: "GCED",
+    CLISE: "CLISE",
+    NV: "Ngữ Văn",
+    LOCE: "NDĐP",
+    CAREER: "HĐTN-HN",
+    VNS: "VNH",
+    ESL: "ESL",
+    MUS: "Âm Nhạc",
+    PE: "Thể Chất",
+    ART: "Mỹ Thuật",
+  },
+};
+
+const HIDDEN_SUBJECTS = new Set(["MUS", "PE", "ART"]);
+
+// Timetable data using subject IDs with teacher specifications
+const TIMETABLE = {
+  monday: [
+    { period: "p1", subject: "GEO" },
+    { period: "p2", subject: "PHY" },
+    { period: "p3", subject: "ESL (GVNN)" },
+    { period: "p4", subject: "ESL (GVNN)" },
+    { period: "p5", subject: "MUS" },
+    { period: "p6", subject: "NV" },
+    { period: "p7", subject: "VNS" },
+  ],
+  tuesday: [
+    { period: "p1", subject: "ESL (GVVN)" },
+    { period: "p2", subject: "ESL (GVVN)" },
+    { period: "p3", subject: "MATHS" },
+    { period: "p4", subject: "MATHS" },
+    { period: "p5", subject: "PHY" },
+    { period: "p6", subject: "PE" },
+    { period: "p7", subject: "CLISE" },
+  ],
+  wednesday: [
+    { period: "p1", subject: "ESL (GVVN)" },
+    { period: "p2", subject: "ESL (GVVN)" },
+    { period: "p3", subject: "NV" },
+    { period: "p4", subject: "GCED" },
+    { period: "p5", subject: "ESL (GVNN)" },
+    { period: "p6", subject: "MATHS" },
+    { period: "p7", subject: "MATHS" },
+  ],
+  thursday: [
+    { period: "p1", subject: "PE" },
+    { period: "p2", subject: "NV" },
+    { period: "p3", subject: "NV" },
+    { period: "p4", subject: "MATHS" },
+    { period: "p5", subject: "PHY" },
+    { period: "p6", subject: "ESL (GVNN)" },
+    { period: "p7", subject: "ESL (GVNN)" },
+  ],
+  friday: [
+    { period: "p1", subject: "GCED" },
+    { period: "p2", subject: "PHY" },
+    { period: "p3", subject: "PHY" },
+    { period: "p4", subject: "HIS" },
+    { period: "p5", subject: "ESL (GVVN)" },
+    { period: "p6", subject: "IT" },
+    { period: "p7", subject: "IT" },
+  ],
+};
+
+const TIMETABLE_DAYS = [
+  { key: "monday", labelKey: "monday", index: 1 },
+  { key: "tuesday", labelKey: "tuesday", index: 2 },
+  { key: "wednesday", labelKey: "wednesday", index: 3 },
+  { key: "thursday", labelKey: "thursday", index: 4 },
+  { key: "friday", labelKey: "friday", index: 5 },
+];
+
+const TIMETABLE_PERIODS = [
+  { key: "p1", labelKey: "period1", start: "08:00am", end: "08:45am", type: "class" },
+  { key: "p2", labelKey: "period2", start: "08:50am", end: "09:35am", type: "class" },
+  { key: "break1", labelKey: "breaktime", start: "09:35am", end: "09:55am", type: "break" },
+  { key: "p3", labelKey: "period3", start: "09:55am", end: "10:40am", type: "class" },
+  { key: "p4", labelKey: "period4", start: "10:45am", end: "11:30am", type: "class" },
+  { key: "p5", labelKey: "period5", start: "11:35am", end: "12:20pm", type: "class" },
+  { key: "lunch", labelKey: "lunchBreak", start: "12:20pm", end: "01:30pm", type: "break" },
+  { key: "p6", labelKey: "period6", start: "01:35pm", end: "02:20pm", type: "class" },
+  { key: "break2", labelKey: "breaktime", start: "02:20pm", end: "02:40pm", type: "break" },
+  { key: "p7", labelKey: "period7", start: "02:40pm", end: "03:25pm", type: "class" },
+];
 
 const TYPE_ORDER = ["Quiz", "Assignment", "File"];
 const TYPE_LABELS = {
   Quiz: "Quizzes",
   Assignment: "Assignments",
   File: "Files",
-};
-
-const SUBJECT_LABELS = {
-  MATHS: "Math",
-  PHY: "Physics",
-  CHEM: "Chemistry",
-  BIO: "Biology",
-  IT: "IT",
-  TECH: "Tech",
-  GEO: "Geography",
-  HIS: "History",
-  CIVIC: "Life Skills",
-  GCED: "GCED",
-  CLISE: "CLISE",
-  NV: "Literature",
-  LOCE: "Local Ed",
-  CAREER: "Career",
-  VNS: "Vietnamese",
-  ESL: "English",
-};
-
-const HIDDEN_SUBJECTS = new Set(["MUS", "PE", "ART"]);
-
-const TIMETABLE_DAYS = [
-  { key: "monday", label: "Monday", index: 1 },
-  { key: "tuesday", label: "Tuesday", index: 2 },
-  { key: "wednesday", label: "Wednesday", index: 3 },
-  { key: "thursday", label: "Thursday", index: 4 },
-  { key: "friday", label: "Friday", index: 5 },
-];
-
-const TIMETABLE_PERIODS = [
-  { key: "p1", label: "Period 1", start: "08:00am", end: "08:45am", type: "class" },
-  { key: "p2", label: "Period 2", start: "08:50am", end: "09:35am", type: "class" },
-  { key: "break1", label: "Breaktime", start: "09:35am", end: "09:55am", type: "break" },
-  { key: "p3", label: "Period 3", start: "09:55am", end: "10:40am", type: "class" },
-  { key: "p4", label: "Period 4", start: "10:45am", end: "11:30am", type: "class" },
-  { key: "p5", label: "Period 5", start: "11:35am", end: "12:20pm", type: "class" },
-  { key: "lunch", label: "Lunch Break", start: "12:20pm", end: "01:30pm", type: "break" },
-  { key: "p6", label: "Period 6", start: "01:35pm", end: "02:20pm", type: "class" },
-  { key: "break2", label: "Breaktime", start: "02:20pm", end: "02:40pm", type: "break" },
-  { key: "p7", label: "Period 7", start: "02:40pm", end: "03:25pm", type: "class" },
-];
-
-// Add classes as { period: "p1", subject: "Math", room: "A203", teacher: "Ms. Nguyen" }.
-const TIMETABLE = {
-  monday: [
-    { period: "p1", subject: "Geography" },
-    { period: "p2", subject: "Physics" },
-    { period: "p3", subject: "ESL (GVVN)" },
-    { period: "p4", subject: "ESL (GVVN)" },
-    { period: "p5", subject: "Music" },
-    { period: "p6", subject: "Literature" },
-    { period: "p7", subject: "Vietnamese Studies" },
-  ],
-  tuesday: [
-    { period: "p1", subject: "ESL (GVVN)" },
-    { period: "p2", subject: "ESL (GVVN)" },
-    { period: "p3", subject: "Math" },
-    { period: "p4", subject: "Math" },
-    { period: "p5", subject: "Physics" },
-    { period: "p6", subject: "Sports" },
-    { period: "p7", subject: "CLISE" },
-  ],
-  wednesday: [
-    { period: "p1", subject: "ESL (GVVN)" },
-    { period: "p2", subject: "ESL (GVVN)" },
-    { period: "p3", subject: "Literature" },
-    { period: "p4", subject: "GCED" },
-    { period: "p5", subject: "ESL (GVVN)" },
-    { period: "p6", subject: "Math" },
-    { period: "p7", subject: "Math" },
-  ],
-  thursday: [
-    { period: "p1", subject: "Sports" },
-    { period: "p2", subject: "Literature" },
-    { period: "p3", subject: "Literature" },
-    { period: "p4", subject: "Math" },
-    { period: "p5", subject: "Physics" },
-    { period: "p6", subject: "ESL (GVVN)" },
-    { period: "p7", subject: "ESL (GVVN)" },
-  ],
-  friday: [
-    { period: "p1", subject: "GCED" },
-    { period: "p2", subject: "Physics" },
-    { period: "p3", subject: "Physics" },
-    { period: "p4", subject: "History" },
-    { period: "p5", subject: "ESL (GVVN)" },
-    { period: "p6", subject: "ICT" },
-    { period: "p7", subject: "ICT" },
-  ],
 };
 
 let items = [];
@@ -147,7 +272,7 @@ function rebuildSubjectCounts() {
 function courseShortLabel(course) {
   const subjectKey = courseSubjectKey(course);
   const subject = subjectKey
-    ? SUBJECT_LABELS[subjectKey] || subjectKey
+    ? getSubjectLabel(subjectKey)
     : (course.name || "").split("-")[1]?.trim().slice(0, 14) || `Course ${course.id}`;
 
   if ((subjectCounts.get(subjectKey) || 0) > 1) {
@@ -217,7 +342,7 @@ function createItemRow(item) {
 
   const badge = document.createElement("span");
   badge.className = `status_badge ${item.completed ? "status_done" : "status_open"}`;
-  badge.textContent = item.completed ? "Done" : "Unfinished";
+  badge.textContent = item.completed ? t("done") : t("unfinished");
 
   content.append(title, meta);
   row.append(content, badge);
@@ -229,12 +354,12 @@ function renderItems() {
   const visibleItems = items.filter((item) => itemMatchesSearch(item, searchQuery));
 
   if (items.length === 0) {
-    showMessage("No items for this week.");
+    showMessage(t("noItemsWeek"));
     return;
   }
 
   if (visibleItems.length === 0) {
-    showMessage("No items match your search.");
+    showMessage(t("noItemsMatch"));
     return;
   }
 
@@ -290,7 +415,6 @@ function updateWeekNav() {
   nextWeekBtn.disabled = weekIndex < 0 || weekIndex >= availableWeeks.length - 1;
 }
 
-
 function weekApiPath(courseId, week) {
   const suffix = unfinishedOnly.checked ? "/unfinished" : "";
   return `/api/courses/${courseId}/week/${week}${suffix}`;
@@ -299,8 +423,8 @@ function weekApiPath(courseId, week) {
 function updateHubTitle() {
   const course = courses.find((entry) => entry.id === selectedCourseId);
   const courseLabel = course ? courseShortLabel(course) : "Course";
-  const scope = unfinishedOnly.checked ? "unfinished" : "items";
-  hubTitle.textContent = `${courseLabel} · Week ${currentWeek} · ${items.length} ${scope}`;
+  const scope = unfinishedOnly.checked ? t("unfinished") : `${items.length} ${t("items")}`;
+  hubTitle.textContent = `${courseLabel} · ${t("week")} ${currentWeek} · ${scope}`;
 }
 
 async function loadCourses() {
@@ -308,14 +432,14 @@ async function loadCourses() {
     return;
   }
 
-  showMessage("Loading courses...");
+  showMessage(t("loadingCourses"));
 
   const data = await fetchJson("/api/courses");
   courses = data.courses.filter((course) => !isCourseHidden(course));
   coursesLoaded = true;
 
   if (courses.length === 0) {
-    showMessage("No active courses found.");
+    showMessage(t("noActiveCourses"));
     return;
   }
 
@@ -355,7 +479,7 @@ async function loadItems() {
     return;
   }
 
-  showMessage("Loading items...");
+  showMessage(t("loadingItems"));
 
   try {
     const data = await fetchJson(weekApiPath(selectedCourseId, currentWeek));
@@ -458,16 +582,27 @@ function createSlotContent(period, entry) {
 
   const subject = document.createElement("p");
   subject.className = "slot_subject";
-  subject.textContent = period.type === "break"
-    ? period.label
-    : entry?.subject || "Free";
+  
+  if (period.type === "break") {
+    subject.textContent = t(period.labelKey);
+  } else if (entry?.subject) {
+    // Extract subject ID and teacher info from strings like "ESL (GVVN)"
+    const subjectMatch = entry.subject.match(/^([A-Z]+)\s*(?:\(([^)]+)\))?$/);
+    if (subjectMatch) {
+      const subjectId = subjectMatch[1];
+      const teacherInfo = subjectMatch[2];
+      const subjectLabel = getSubjectLabel(subjectId);
+      subject.textContent = teacherInfo ? `${subjectLabel} (${teacherInfo})` : subjectLabel;
+    } else {
+      subject.textContent = getSubjectLabel(entry.subject);
+    }
+  } else {
+    subject.textContent = t("free");
+  }
 
   const metaParts = [];
   if (entry?.room) {
     metaParts.push(entry.room);
-  }
-  if (entry?.teacher) {
-    metaParts.push(entry.teacher);
   }
 
   const meta = document.createElement("p");
@@ -488,13 +623,13 @@ function renderTimetableGrid() {
 
   const corner = document.createElement("div");
   corner.className = "day_cell";
-  corner.textContent = "Time";
+  corner.textContent = t("time");
   cells.push(corner);
 
   for (const day of TIMETABLE_DAYS) {
     const dayCell = document.createElement("div");
     dayCell.className = "day_cell";
-    dayCell.textContent = day.label;
+    dayCell.textContent = t(day.labelKey);
 
     if (day.key === todayKey) {
       dayCell.classList.add("day_cell_today");
@@ -512,7 +647,7 @@ function renderTimetableGrid() {
       }
       const breakSubject = document.createElement("p");
       breakSubject.className = "slot_subject";
-      breakSubject.textContent = period.label;
+      breakSubject.textContent = t(period.labelKey);
       const breakMeta = document.createElement("p");
       breakMeta.className = "slot_meta";
       breakMeta.textContent = `${period.start}-\n${period.end}`;
@@ -523,7 +658,7 @@ function renderTimetableGrid() {
 
     const timeCell = document.createElement("div");
     timeCell.className = "time_cell";
-    timeCell.textContent = `${period.label}\n${period.start}-\n${period.end}`;
+    timeCell.textContent = `${t(period.labelKey)}\n${period.start}-\n${period.end}`;
     cells.push(timeCell);
 
     for (let i = 0; i < TIMETABLE_DAYS.length; i++) {
@@ -567,12 +702,12 @@ function renderTimetableMobile() {
     section.className = "day_schedule";
 
     const heading = document.createElement("h3");
-    heading.textContent = day.label;
+    heading.textContent = t(day.labelKey);
 
     if (day.key === todayKey) {
       const badge = document.createElement("span");
       badge.className = "today_label";
-      badge.textContent = "Today";
+      badge.textContent = t("today");
       heading.appendChild(badge);
     }
 
@@ -582,7 +717,7 @@ function renderTimetableMobile() {
     if (!hasClasses) {
       const empty = document.createElement("p");
       empty.className = "day_empty";
-      empty.textContent = "No classes added yet.";
+      empty.textContent = t("noClassesAdded");
       section.appendChild(empty);
     }
 
@@ -597,7 +732,7 @@ function renderTimetableMobile() {
 
       const time = document.createElement("div");
       time.className = "mobile_time";
-      time.textContent = `${period.label}\n${period.start}-\n${period.end}`;
+      time.textContent = `${t(period.labelKey)}\n${period.start}-\n${period.end}`;
 
       const content = document.createElement("div");
       if (day.key === todayKey && period.key === currentPeriod) {
@@ -620,6 +755,24 @@ function renderTimetableMobile() {
 function renderTimetable() {
   renderTimetableGrid();
   renderTimetableMobile();
+}
+
+function renderAll() {
+  renderCoursePills();
+  renderItems();
+  renderTimetable();
+  updateHubTitle();
+  updateWeekNav();
+  
+  // Update static text elements
+  tagline.textContent = t("tagline");
+  timetableTitle.textContent = t("timetableTitle");
+  timetableNote.textContent = t("timetableNote");
+  document.querySelector(".view_tab[data-view='work']").textContent = t("work");
+  document.querySelector(".view_tab[data-view='timetable']").textContent = t("timetable");
+  document.getElementById("week_label").childNodes[0].textContent = `${t("week")} `;
+  searchInput.placeholder = t("searchPlaceholder");
+  document.querySelector(".filter_toggle span").textContent = t("unfinishedLabel");
 }
 
 function setView(viewName) {
@@ -656,12 +809,6 @@ weekInput.addEventListener("keydown", (event) => {
       return;
     }
 
-    const weekIndex = availableWeeks.indexOf(value);
-    if (weekIndex < 0) {
-      updateWeekNav();
-      return;
-    }
-
     currentWeek = value;
     localStorage.setItem("selectedWeek", String(currentWeek));
     loadItems();
@@ -676,6 +823,10 @@ searchInput.addEventListener("input", renderItems);
 document.querySelector(".icon").addEventListener("click", () => searchInput.focus());
 viewTabs.forEach((tab) => {
   tab.addEventListener("click", () => setView(tab.dataset.view));
+});
+
+languageSelector.addEventListener("change", (event) => {
+  setLanguage(event.target.value);
 });
 
 const initialView = new URLSearchParams(window.location.search).get("view")
@@ -702,3 +853,6 @@ const savedTheme = localStorage.getItem("theme") || "dark";
 applyTheme(savedTheme);
 
 themeToggle.addEventListener("click", toggleTheme);
+
+// Initialize language
+setLanguage(currentLanguage);
